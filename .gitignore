@@ -1,0 +1,11 @@
+syntax: glob
+Debug/*
+Test/*
+ipch/*
+Release/*
+Test*/*
+/*.suo
+/*.sln
+/*.sdf
+/*.opensdf
+/*.filters
