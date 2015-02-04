@@ -58,7 +58,10 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>contrib\METIS\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>metis_win32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>metis_win32.lib</AdditionalDependencies>
+      <PreventDllBinding>true</PreventDllBinding>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <Version>0.1</Version>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -84,6 +87,7 @@
     <ClCompile Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\main.cpp" />
     <ClCompile Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\methods\decomp.cpp" />
     <ClCompile Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\methods\fvm_heat.cpp" />
+    <ClCompile Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\methods\heat_bnd.cpp" />
     <ClCompile Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\methods\method.cpp" />
     <ClCompile Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\methods\solver.cpp" />
     <ClCompile Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\tinyxml\tinystr.cpp" />
@@ -96,6 +100,7 @@
     <ClInclude Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\grid.h" />
     <ClInclude Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\methods\decomp.h" />
     <ClInclude Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\methods\fvm_heat.h" />
+    <ClInclude Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\methods\heat_bnd.h" />
     <ClInclude Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\methods\method.h" />
     <ClInclude Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\methods\solver.h" />
     <ClInclude Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\tinyxml\tinystr.h" />

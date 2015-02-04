@@ -2,8 +2,15 @@
 #define _FVM_TVD_H_
 
 #include <method.h>
+#include <vector>
+#include "heat_bnd.h"
 
-class FVM_TVD: public Method
+typedef std::vector<Material> Materials;
+typedef std::vector<Region> Regions;
+typedef std::vector<HeatBoundary*> HeatBoundaries;
+
+
+class FVM_Heat: public Method
 {
 public:
 	virtual void init(char * xmlFileName);
@@ -61,27 +68,13 @@ private:
 	int				matCount;
 	int				regCount;
 	int				bCount;
-	Material	*	materials;
-	Region		*	regions;
-	Boundary	*	boundaries;
+	Materials		materials;
+	Regions			regions;
+	HeatBoundaries		boundaries;
 
-	//! консервативные переменные на текущем временном слое
-	double * ro;			 
-	double * ru;			
-	double * rv;			
-	double * re;			
-
-	//! консервативные переменные на предыдущем временном слое
-	double * ro_old;
-	double * ru_old;
-	double * rv_old;
-	double * re_old;
-
-	//! правые части системы уравнений разностной схемы
-	double * ro_int;
-	double * ru_int;
-	double * rv_int;
-	double * re_int;
+	double * T;			 
+	double * T_old;
+	double * T_int;
 	
 
 };

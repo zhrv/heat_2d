@@ -33,7 +33,7 @@ Method* Solver::initMethod(char* fileName)
 	}
 	else if (strcmp("FVM_HEAT", methodName) == 0) 
 	{
-		m = new FVM_TVD();
+		m = new FVM_Heat();
 	}
 	else
 	{

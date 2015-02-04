@@ -3,7 +3,7 @@
 #include <string>
 #include "global.h"
 
-void FVM_TVD::init(char * xmlFileName)
+void FVM_Heat::init(char * xmlFileName)
 {
 	TiXmlDocument doc( xmlFileName );
 	bool loadOkay = doc.LoadFile( TIXML_ENCODING_UTF8 );
@@ -29,149 +29,123 @@ void FVM_TVD::init(char * xmlFileName)
 
 	// чтение параметров о МАТЕРИАЛАХ
 	node0 = task->FirstChild("materials");
-	node0->ToElement()->Attribute("count", &matCount);;
-	materials = new Material[matCount];
 	TiXmlNode* matNode = node0->FirstChild("material"); 
-	for (int i = 0; i < matCount; i++)
+	while (matNode != NULL)
 	{
-		Material & mat = materials[i];
+		Material mat;
 		matNode->ToElement()->Attribute("id", &mat.id);
 		node1 = matNode->FirstChild("name");
 		el = node1->ToElement();
 		mat.name = el->GetText();
 		node1 = matNode->FirstChild("parameters");
-		node1->FirstChild( "M"  )->ToElement()->Attribute( "value", &mat.M  );
-		node1->FirstChild( "Cp" )->ToElement()->Attribute( "value", &mat.Cp );
 		node1->FirstChild( "K"  )->ToElement()->Attribute( "value", &mat.K  );
-		node1->FirstChild( "ML" )->ToElement()->Attribute( "value", &mat.ML );
+		materials.push_back(mat);
+
 		matNode = matNode->NextSibling("material");
 	}
+	matCount = materials.size();
 
 	// чтение параметров о РЕГИОНАХ
 	node0 = task->FirstChild("regions");
-	node0->ToElement()->Attribute("count", &regCount);
-	regions = new Region[regCount];
 	TiXmlNode* regNode = node0->FirstChild("region");
-	for (int i = 0; i < regCount; i++)
+	while (regNode != NULL)
 	{
-		Region & reg = regions[i];
+		Region reg;
 		regNode->ToElement()->Attribute("id", &reg.id);
 		regNode->FirstChild("material")->ToElement()->Attribute("id", &reg.matId);
 		regNode->FirstChild("cell")->ToElement()->Attribute("type", &reg.cellType);
 		
 		node1 = regNode->FirstChild("parameters");
-		node1->FirstChild( "Vx" )->ToElement()->Attribute( "value", &reg.par.u );
-		node1->FirstChild( "Vy" )->ToElement()->Attribute( "value", &reg.par.v );
 		node1->FirstChild( "T"  )->ToElement()->Attribute( "value", &reg.par.T );
 		node1->FirstChild( "P"  )->ToElement()->Attribute( "value", &reg.par.p );
 		
-		Material& mat = materials[reg.matId];
-		mat.URS(reg.par, 2);	// r=r(p,T)
-		mat.URS(reg.par, 1);	// e=e(p,r)
-		
+		regions.push_back(reg);
+
 		regNode = regNode->NextSibling("region");
 	}
 
+	regCount = regions.size();
+
 	// чтение параметров о ГРАНИЧНЫХ УСЛОВИЯХ
 	node0 = task->FirstChild("boundaries");
-	node0->ToElement()->Attribute("count", &bCount);
-	boundaries = new Boundary[bCount];
 	TiXmlNode* bNode = node0->FirstChild("boundCond");
-	for (int i = 0; i < bCount; i++)
+	while (bNode != NULL)
 	{
-		Boundary & b = boundaries[i];
-		bNode->ToElement()->Attribute("edgeType", &b.edgeType);
-		const char * str = bNode->FirstChild("type")->ToElement()->GetText();
+		int edgeType;
+		bNode->ToElement()->Attribute("edgeType", &edgeType);
+		
+		
+		HeatBoundary * b = HeatBoundary::create(bNode);
+		
+		
+		
 		if (strcmp(str, "BOUND_WALL") == 0) 
 		{
-			b.parCount = 0;
-			b.par = NULL;
-			b.type = Boundary::BOUND_WALL;
+			b->parCount = 0;
+			b->par = NULL;
+			//b->type = Boundary::BOUND_WALL;
 		} else
 		if (strcmp(str, "BOUND_OUTLET") == 0) 
 		{
-			b.parCount = 0;
-			b.par = NULL;
-			b.type = Boundary::BOUND_OUTLET;
+			b->parCount = 0;
+			b->par = NULL;
+			//b->type = Boundary::BOUND_OUTLET;
 		} else
 		if (strcmp(str, "BOUND_INLET") == 0) 
 		{
-			b.parCount = 4;
-			b.par = new double[4];
-			b.type = Boundary::BOUND_INLET;
+			b->parCount = 4;
+			b->par = new double[4];
+			//b->type = Boundary::BOUND_INLET;
 
 			node1 = bNode->FirstChild("parameters");
-			node1->FirstChild( "T"  )->ToElement()->Attribute( "value", &b.par[0] );
-			node1->FirstChild( "P"  )->ToElement()->Attribute( "value", &b.par[1] );
-			node1->FirstChild( "Vx" )->ToElement()->Attribute( "value", &b.par[2] );
-			node1->FirstChild( "Vy" )->ToElement()->Attribute( "value", &b.par[3] );
+			node1->FirstChild("T")->ToElement()->Attribute("value", &b->par[0]);
+			node1->FirstChild("P")->ToElement()->Attribute("value", &b->par[1]);
+			node1->FirstChild("Vx")->ToElement()->Attribute("value", &b->par[2]);
+			node1->FirstChild("Vy")->ToElement()->Attribute("value", &b->par[3]);
 		} else {
 			log("ERROR: unsupported boundary condition type '%s'", str);
 			EXIT(1);
 		}
 
-		
+		boundaries.push_back(b);
 		
 		
 		bNode = bNode->NextSibling("boundCond");
 	}
-
+	bCount = boundaries.size();
 
 	node0 = task->FirstChild("mesh");
 	const char* fName = task->FirstChild("mesh")->FirstChild("name")->ToElement()->Attribute("value");
 	grid.initFromFiles((char*)fName);
 
 
-	ro		= new double[grid.cCount];
-	ru		= new double[grid.cCount];
-	rv		= new double[grid.cCount];
-	re		= new double[grid.cCount];
-
-	ro_old	= new double[grid.cCount];
-	ru_old	= new double[grid.cCount];
-	rv_old	= new double[grid.cCount];
-	re_old	= new double[grid.cCount];
-
-	ro_int	= new double[grid.cCount];
-	ru_int	= new double[grid.cCount];
-	rv_int	= new double[grid.cCount];
-	re_int	= new double[grid.cCount];
-
+	T		= new double[grid.cCount];
+	T_old	= new double[grid.cCount];
+	T_int	= new double[grid.cCount];
 
 	for (int i = 0; i < grid.cCount; i++)
 	{
 		Region & reg = getRegion(i);
-		convertParToCons(i, reg.par);
+		T[i] = reg.par.T;
 	}
 
-	memcpy(ro_old, ro, grid.cCount*sizeof(double));
-	memcpy(ru_old, ru, grid.cCount*sizeof(double));
-	memcpy(rv_old, rv, grid.cCount*sizeof(double));
-	memcpy(re_old, re, grid.cCount*sizeof(double));
+	memcpy(T_old, T, grid.cCount*sizeof(double));
 
 	calcTimeStep();
 	save(0);
 }
 
 
-void FVM_TVD::calcTimeStep()
+void FVM_Heat::calcTimeStep()
 {
 	double tau = 1.0e+20;
-	for (int iCell = 0; iCell < grid.cCount; iCell++)
-	{
-		Param p;
-		convertConsToPar(iCell, p);
-		double tmp = grid.cells[iCell].S/_max_(abs(p.u)+p.cz, abs(p.v)+p.cz);
-		if (tmp < tau) tau = tmp;
-	}
-	tau  *= CFL;
 	TAU = _min_(TAU, tau);
 	printf("\n\nTime step TAU = %e.\n\n", TAU);
 }
 
 
 
-void FVM_TVD::run() 
+void FVM_Heat::run() 
 {
 
 
@@ -184,10 +158,7 @@ void FVM_TVD::run()
 	{
 		t += TAU; 
 		step++;
-		memset(ro_int, 0, nc*sizeof(double));
-		memset(ru_int, 0, nc*sizeof(double));
-		memset(rv_int, 0, nc*sizeof(double));
-		memset(re_int, 0, nc*sizeof(double));
+		memset(T_int, 0, nc*sizeof(double));
 		//calcGrad();
 		for (int iEdge = 0; iEdge < ne; iEdge++)
 		{
@@ -201,35 +172,20 @@ void FVM_TVD::run()
 			double __GAM = 1.4; // TODO: сделать правильное вычисление показателя адиабаты
 			calcFlux(fr, fu, fv, fe, pL, pR, n, __GAM);
 			
-			ro_int[c1] += fr*l;
-			ru_int[c1] += fu*l;
-			rv_int[c1] += fv*l;
-			re_int[c1] += fe*l;
+			T_int[c1] += fr*l;
 			if (c2 > -1) 
 			{
-				ro_int[c2] -= fr*l;
-				ru_int[c2] -= fu*l;
-				rv_int[c2] -= fv*l;
-				re_int[c2] -= fe*l;
+				T_int[c2] -= fr*l;
 			}
 
 		}
-		memcpy(ro, ro_old, nc*sizeof(double));
-		memcpy(ru, ru_old, nc*sizeof(double));
-		memcpy(rv, rv_old, nc*sizeof(double));
-		memcpy(re, re_old, nc*sizeof(double));
+		memcpy(T, T_old, nc*sizeof(double));
 		for (int iCell = 0; iCell < nc; iCell++)
 		{
 			register double cfl = TAU/grid.cells[iCell].S;
-			ro[iCell] -= cfl*ro_int[iCell];
-			ru[iCell] -= cfl*ru_int[iCell];
-			rv[iCell] -= cfl*rv_int[iCell];
-			re[iCell] -= cfl*re_int[iCell];
+			T[iCell] -= cfl*T_int[iCell];
 		}
-		memcpy(ro_old, ro, nc*sizeof(double));
-		memcpy(ru_old, ru, nc*sizeof(double));
-		memcpy(rv_old, rv, nc*sizeof(double));
-		memcpy(re_old, re, nc*sizeof(double));
+		memcpy(T_old, T, nc*sizeof(double));
 		
 		
 		if (step % FILE_SAVE_STEP == 0)
@@ -244,7 +200,7 @@ void FVM_TVD::run()
 
 }
 
-void FVM_TVD::save(int step)
+void FVM_Heat::save(int step)
 {
 	char fName[50];
 	//sprintf(fName, "res_%010d.dat", step);
@@ -359,7 +315,7 @@ void FVM_TVD::save(int step)
 
 }
 
-void FVM_TVD::calcFlux(double& fr, double& fu, double& fv, double& fe, Param pL, Param pR, Vector n, double GAM)
+void FVM_Heat::calcFlux(double& fr, double& fu, double& fv, double& fe, Param pL, Param pR, Vector n, double GAM)
 {
 	{	// GODUNOV FLUX
 		double RI, EI, PI, UI, VI, WI, UN, UT;
@@ -398,7 +354,7 @@ void FVM_TVD::calcFlux(double& fr, double& fu, double& fv, double& fe, Param pL,
 }
 
 
-void FVM_TVD::reconstruct(int iEdge, Param& pL, Param& pR)
+void FVM_Heat::reconstruct(int iEdge, Param& pL, Param& pR)
 {
 	if (grid.edges[iEdge].type == Edge::TYPE_INNER) 
 	{
@@ -414,12 +370,12 @@ void FVM_TVD::reconstruct(int iEdge, Param& pL, Param& pR)
 }
 
 
-void FVM_TVD::boundaryCond(int iEdge, Param& pL, Param& pR)
+void FVM_Heat::boundaryCond(int iEdge, Param& pL, Param& pR)
 {
 	int iBound = -1;
 	for (int i = 0; i < bCount; i++)
 	{
-		if (grid.edges[iEdge].type == boundaries[i].edgeType) 
+		if (grid.edges[iEdge].type == boundaries[i]->edgeType)
 		{
 			iBound = i;
 			break;
@@ -430,60 +386,52 @@ void FVM_TVD::boundaryCond(int iEdge, Param& pL, Param& pR)
 		log("ERROR (boundary condition): unknown edge type of edge %d...\n", iEdge);
 		EXIT(1);
 	}
-	Boundary& b = boundaries[iBound];
-	int c1	= grid.edges[iEdge].c1;
-	Material& m = getMaterial(c1);
-	switch (b.type)
-	{
-	case Boundary::BOUND_INLET:
-		pR.T  = b.par[0];		//!< температура
-		pR.p  = b.par[1];		//!< давление
-		pR.u  = b.par[2];		//!< первая компонента вектора скорости
-		pR.v  = b.par[3];		//!< вторая компонента вектора скорости
-		
-		m.URS(pR, 2);
-		m.URS(pR, 1);
-		break;
-	
-	case Boundary::BOUND_OUTLET:
-		pR = pL;
-		break;
-	
-	case Boundary::BOUND_WALL:
-		pR = pL;
-		double Un = pL.u*grid.edges[iEdge].n.x+pL.v*grid.edges[iEdge].n.y;
-		Vector V;
-		V.x = grid.edges[iEdge].n.x*Un*2.0; 
-		V.y = grid.edges[iEdge].n.y*Un*2.0;
-		pR.u = pL.u-V.x;
-		pR.v = pL.v-V.y;
-		break;
-	}
+
+	boundaries[iBound]->run(pL, pR);
+
+	//Boundary& b = boundaries[iBound];
+	//int c1	= grid.edges[iEdge].c1;
+	//Material& m = getMaterial(c1);
+	//switch (b.type)
+	//{
+	//case Boundary::BOUND_INLET:
+	//	pR.T  = b.par[0];		//!< температура
+	//	pR.p  = b.par[1];		//!< давление
+	//	pR.u  = b.par[2];		//!< первая компонента вектора скорости
+	//	pR.v  = b.par[3];		//!< вторая компонента вектора скорости
+	//	
+	//	m.URS(pR, 2);
+	//	m.URS(pR, 1);
+	//	break;
+	//
+	//case Boundary::BOUND_OUTLET:
+	//	pR = pL;
+	//	break;
+	//
+	//case Boundary::BOUND_WALL:
+	//	pR = pL;
+	//	double Un = pL.u*grid.edges[iEdge].n.x+pL.v*grid.edges[iEdge].n.y;
+	//	Vector V;
+	//	V.x = grid.edges[iEdge].n.x*Un*2.0; 
+	//	V.y = grid.edges[iEdge].n.y*Un*2.0;
+	//	pR.u = pL.u-V.x;
+	//	pR.v = pL.v-V.y;
+	//	break;
+	//}
 }
 
 
-void FVM_TVD::done()
+void FVM_Heat::done()
 {
-	delete[] ro;
-	delete[] ru;
-	delete[] rv;
-	delete[] re;
-
-	delete[] ro_old;
-	delete[] ru_old;
-	delete[] rv_old;
-	delete[] re_old;
-
-	delete[] ro_int;
-	delete[] ru_int;
-	delete[] rv_int;
-	delete[] re_int;
+	delete[] T;
+	delete[] T_old;
+	delete[] T_int;
 }
 
 
 
 
-Region & FVM_TVD::getRegionByCellType(int type)
+Region & FVM_Heat::getRegionByCellType(int type)
 {
 	for (int i = 0; i < regCount; i++)
 	{
@@ -494,35 +442,32 @@ Region & FVM_TVD::getRegionByCellType(int type)
 }
 
 
-Region   &	FVM_TVD::getRegion	(int iCell)
+Region   &	FVM_Heat::getRegion	(int iCell)
 {
 	return getRegionByCellType( grid.cells[iCell].type );
 }
 
-Material &	FVM_TVD::getMaterial	(int iCell)
+Material &	FVM_Heat::getMaterial	(int iCell)
 {
 	Region & reg = getRegion(iCell);
 	return materials[reg.matId];
 }
 
 
-void FVM_TVD::convertParToCons(int iCell, Param & par)
+void FVM_Heat::convertParToCons(int iCell, Param & par)
 {
-	ro[iCell] = par.r;
-	ru[iCell] = par.r*par.u;
-	rv[iCell] = par.r*par.v;
-	re[iCell] = par.r*(par.e+0.5*(par.u*par.u+par.v*par.v));
+	T[iCell] = par.T;
 }
 
-void FVM_TVD::convertConsToPar(int iCell, Param & par)
+void FVM_Heat::convertConsToPar(int iCell, Param & par)
 {
-	par.r = ro[iCell];
-	par.u = ru[iCell]/ro[iCell];
-	par.v = rv[iCell]/ro[iCell];
-	par.E = re[iCell]/ro[iCell];
-	par.e = par.E-0.5*(par.u*par.u+par.v*par.v);
-	Material& mat = getMaterial(iCell);
-	mat.URS(par, 0);
+	par.T = T[iCell];
+	//par.u = ru[iCell]/ro[iCell];
+	//par.v = rv[iCell]/ro[iCell];
+	//par.E = re[iCell]/ro[iCell];
+	//par.e = par.E-0.5*(par.u*par.u+par.v*par.v);
+	//Material& mat = getMaterial(iCell);
+	//mat.URS(par, 0);
 }
 
 
