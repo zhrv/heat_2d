@@ -7,34 +7,49 @@ const char* HeatBoundary::TYPE_NOFLOW	= "BOUND_NOFLOW";
 
 HeatBoundary* HeatBoundary::create(TiXmlNode* bNode)
 {
-	HeatBoundary * b;
+	HeatBoundary * b = 0;
 	TiXmlNode* node = 0;
+	TiXmlNode* node1 = 0;
 
 	const char * type = bNode->FirstChild("type")->ToElement()->GetText();
 	
 	if (strcmp(type, HeatBoundary::TYPE_CONST) == 0) {
 		b = new HeatBndConst();
+		bNode->ToElement()->Attribute("edgeType", &b->edgeType);
 		b->parCount = 1;
 		b->par = new double[1];
 		node = bNode->FirstChild("parameters");
-		node->FirstChild("T")->ToElement()->Attribute("value", &b->par[0]);
+		node1 = node->FirstChild("T");
+		if (!node1) throw Exception("Parameter 'T' isn't specified  for BOUND_FLOW.", Exception::TYPE_BOUND_NOPAR); 
+		node1->ToElement()->Attribute("value", &b->par[0]);
 
 	}
 
 	if (strcmp(type, HeatBoundary::TYPE_NOFLOW) == 0) {
 		b = new HeatBndNoFlow();
+		bNode->ToElement()->Attribute("edgeType", &b->edgeType);
 		b->parCount = 0;
 		b->par = NULL;
 	}
 
 	if (strcmp(type, HeatBoundary::TYPE_FLOW) == 0) {
-		b = new HeatBndConst();
+		b = new HeatBndFlow();
+		bNode->ToElement()->Attribute("edgeType", &b->edgeType);
 		b->parCount = 2;
 		b->par = new double[2];
 		node = bNode->FirstChild("parameters");
-		node->FirstChild("factor")->ToElement()->Attribute("value", &b->par[0]);   // factor*(dT/dX)=flowValue
-		node->FirstChild("flowValue")->ToElement()->Attribute("value", &b->par[1]);
+		node1 = node->FirstChild("factor");
+		if (!node1) throw Exception("Parameter 'factor' isn't specified  for BOUND_FLOW.", Exception::TYPE_BOUND_NOPAR);
+		node1->ToElement()->Attribute("value", &b->par[0]);   // factor*(dT/dX)=flowValue
+		
+		node1 = node->FirstChild("flowValue");
+		if (!node1) throw Exception("Parameter 'flowValue' isn't specified  for BOUND_FLOW.", Exception::TYPE_BOUND_NOPAR);
+		node1->ToElement()->Attribute("value", &b->par[1]);
 
+	}
+
+	if (!b) {
+		throw Exception("Unknown bountary type '%s' specified.", Exception::TYPE_BOUND_UNKNOWN);
 	}
 
 	return b;

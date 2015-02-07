@@ -172,6 +172,23 @@ struct Boundary
 	static const int BOUND_WALL		= 3;
 };
 
+
+class Exception
+{
+public:
+	static const int TYPE_BOUND_NOPAR = 101;
+	static const int TYPE_BOUND_UNKNOWN = 102;
+
+	Exception(char* msg, int t) : message(msg), type(t) {}
+	char* getMessage() { return message; }
+	int getType() { return type; }
+
+private:
+	char* message;
+	int type;
+};
+
+
 extern FILE * hLog;
 
 
