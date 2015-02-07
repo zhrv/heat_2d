@@ -54,9 +54,14 @@ protected:
 	void save(int);
 
 	/**
-	 *	Вычисление численного потока
-	 */
+	*	Вычисление численного потока
+	*/
 	void calcFlux(double& fr, double& fu, double& fv, double& fe, Param pL, Param pR, Vector n, double GAM);
+
+	/**
+	*	Вычисление градиентов
+	*/
+	void calcGrad();
 
 private:
 	double TMAX;
@@ -64,6 +69,7 @@ private:
 	double CFL;
 	int FILE_SAVE_STEP;
 	int PRINT_STEP;
+	int STEP_MAX;
 
 	int				matCount;
 	int				regCount;
@@ -75,7 +81,7 @@ private:
 	double * T;			 
 	double * T_old;
 	double * T_int;
-	
+	Vector * gradT;
 
 };
 

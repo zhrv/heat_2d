@@ -191,6 +191,7 @@ private:
 
 extern FILE * hLog;
 
+inline double scalar_prod(Vector a, Vector b) { return a.x*b.x+a.y*b.y; }
 
 extern void log(char * format, ...);
 extern void EXIT(int err);

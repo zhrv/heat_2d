@@ -24,6 +24,7 @@ void FVM_Heat::init(char * xmlFileName)
 	node0->FirstChild("TAU")->ToElement()->Attribute("value", &TAU);
 	node0->FirstChild("TMAX")->ToElement()->Attribute("value", &TMAX);
 	node0->FirstChild("CFL")->ToElement()->Attribute("value", &CFL);
+	node0->FirstChild("STEP_MAX")->ToElement()->Attribute("value", &STEP_MAX);
 	node0->FirstChild("FILE_OUTPUT_STEP")->ToElement()->Attribute("value", &FILE_SAVE_STEP);
 	node0->FirstChild("LOG_OUTPUT_STEP")->ToElement()->Attribute("value", &PRINT_STEP);
 
@@ -98,7 +99,8 @@ void FVM_Heat::init(char * xmlFileName)
 
 	T		= new double[grid.cCount];
 	T_old	= new double[grid.cCount];
-	T_int	= new double[grid.cCount];
+	T_int = new double[grid.cCount];
+	gradT = new Vector[grid.cCount];
 
 	for (int i = 0; i < grid.cCount; i++)
 	{
@@ -135,10 +137,11 @@ void FVM_Heat::run()
 
 	double			t		= 0.0;
 	unsigned int	step	= 0;
-	while (t < TMAX) 
+	while (t < TMAX && step < STEP_MAX) 
 	{
 		t += TAU; 
 		step++;
+		calcGrad();
 		memset(T_int, 0, nc*sizeof(double));
 		for (int iEdge = 0; iEdge < ne; iEdge++)
 		{
@@ -154,8 +157,8 @@ void FVM_Heat::run()
 			{
 				convertConsToPar(c1, pL);
 				convertConsToPar(c2, pR);
-				h = edge.cnl1+edge.cnl2;
-				q = (pR.T-pL.T)/h;
+				q = scalar_prod(gradT[c1], n) + scalar_prod(gradT[c2], n);
+				q *= 0.5;
 			}
 			else {
 				int c1 = grid.edges[iEdge].c1;
@@ -163,6 +166,7 @@ void FVM_Heat::run()
 				boundaryCond(iEdge, pL, pR);
 				h = edge.cnl1 + edge.cnl1;
 				q = (pR.T - pL.T) / h;
+				q = scalar_prod(gradT[c1], n);
 			}
 			T_int[c1] += q*l;
 			if (c2 > -1) 
@@ -190,6 +194,48 @@ void FVM_Heat::run()
 		}
 	}
 
+}
+
+void FVM_Heat::calcGrad()
+{
+	for (int i = 0; i < grid.cCount; i++) {
+		gradT[i].x = 0.0;
+		gradT[i].y = 0.0;
+	}
+
+	for (int iEdge = 0; iEdge < grid.eCount; iEdge++) {
+		Edge &edge = grid.edges[iEdge];
+		double fr, fu, fv, fe;
+		int c1 = grid.edges[iEdge].c1;
+		int c2 = grid.edges[iEdge].c2;
+		Vector n = grid.edges[iEdge].n;
+		double l = grid.edges[iEdge].l;
+		Param pL, pR;
+		double q, h;
+		if (edge.type == Edge::TYPE_INNER)
+		{
+			convertConsToPar(c1, pL);
+			convertConsToPar(c2, pR);
+			q = 0.5*(pL.T+pR.T);
+		}
+		else {
+			convertConsToPar(c1, pL);
+			boundaryCond(iEdge, pL, pR);
+			q = 0.5*(pL.T + pR.T);
+		}
+		gradT[c1].x += q*l*n.x;
+		gradT[c1].y += q*l*n.y;
+		if (c2 > -1)
+		{
+			gradT[c2].x -= q*l*n.x;
+			gradT[c2].y -= q*l*n.y;
+		}
+	}
+
+	for (int i = 0; i < grid.cCount; i++) {
+		gradT[i].x /= grid.cells[i].S;
+		gradT[i].y /= grid.cells[i].S;
+	}
 }
 
 void FVM_Heat::save(int step)
@@ -264,6 +310,7 @@ void FVM_Heat::done()
 	delete[] T;
 	delete[] T_old;
 	delete[] T_int;
+	delete[] gradT;
 }
 
 
