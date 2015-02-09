@@ -153,6 +153,15 @@ void FVM_Heat::calcTimeStep()
 	log("\n\nTime step TAU = %e.\n\n", TAU);
 }
 
+void FVM_Heat::done()
+{
+	delete[] T;
+	delete[] T_old;
+	delete[] T_int;
+	delete[] gradT;
+}
+
+
 
 
 void FVM_Heat::run() 
@@ -190,9 +199,9 @@ void FVM_Heat::run()
 			else {
 				int c1 = grid.edges[iEdge].c1;
 				convertConsToPar(c1, pL);
-				boundaryCond(iEdge, pL, pR);
-				h = edge.cnl1 + edge.cnl1;
-				q = (pR.T - pL.T) / h;
+				//boundaryCond(iEdge, pL, pR);
+				//h = edge.cnl1 + edge.cnl1;
+				//q = (pR.T - pL.T) / h;
 				q = scalar_prod(gradT[c1], n);
 			}
 			T_int[c1] += q*l;
@@ -220,8 +229,8 @@ void FVM_Heat::run()
 			log("step: %d\t\ttime step: %.16f\n", step, t);
 		}
 	}
-
 }
+
 
 void FVM_Heat::calcGrad()
 {
@@ -265,6 +274,14 @@ void FVM_Heat::calcGrad()
 	}
 }
 
+void FVM_Heat::boundaryCond(int iEdge, Param& pL, Param& pR)
+{
+	if (grid.edges[iEdge].bnd) {
+		grid.edges[iEdge].bnd->run(pL, pR);
+	}
+}
+
+
 void FVM_Heat::save(int step)
 {
 	char fName[50];
@@ -278,11 +295,11 @@ void FVM_Heat::save(int step)
 	fprintf(fp, "POINTS %d float\n", grid.nCount);
 	for (int i = 0; i < grid.nCount; i++)
 	{
-		fprintf(fp, "%f %f %f  ", grid.nodes[i].x,  grid.nodes[i].y, 0.0);
-		if (i+1 % 8 == 0) fprintf(fp, "\n");
+		fprintf(fp, "%f %f %f  ", grid.nodes[i].x, grid.nodes[i].y, 0.0);
+		if (i + 1 % 8 == 0) fprintf(fp, "\n");
 	}
 	fprintf(fp, "\n");
-	fprintf(fp, "CELLS %d %d\n", grid.cCount, 4*grid.cCount);
+	fprintf(fp, "CELLS %d %d\n", grid.cCount, 4 * grid.cCount);
 	for (int i = 0; i < grid.cCount; i++)
 	{
 		fprintf(fp, "3 %d %d %d\n", grid.cells[i].nodesInd[0], grid.cells[i].nodesInd[1], grid.cells[i].nodesInd[2]);
@@ -299,7 +316,7 @@ void FVM_Heat::save(int step)
 		Param p;
 		convertConsToPar(i, p);
 		fprintf(fp, "%25.16f ", p.T);
-		if (i+1 % 8 == 0 || i+1 == grid.cCount) fprintf(fp, "\n");
+		if (i + 1 % 8 == 0 || i + 1 == grid.cCount) fprintf(fp, "\n");
 	}
 
 
@@ -308,22 +325,6 @@ void FVM_Heat::save(int step)
 	printf("File '%s' saved...\n", fName);
 
 
-}
-
-void FVM_Heat::boundaryCond(int iEdge, Param& pL, Param& pR)
-{
-	if (grid.edges[iEdge].bnd) {
-		grid.edges[iEdge].bnd->run(pL, pR);
-	}
-}
-
-
-void FVM_Heat::done()
-{
-	delete[] T;
-	delete[] T_old;
-	delete[] T_int;
-	delete[] gradT;
 }
 
 
