@@ -179,6 +179,8 @@ public:
 	static const int TYPE_BOUND_NOPAR = 101;
 	static const int TYPE_BOUND_UNKNOWN = 102;
 
+	static const int TYPE_MESH_WRONG_NAME = 201;
+
 	Exception(char* msg, int t) : message(msg), type(t) {}
 	char* getMessage() { return message; }
 	int getType() { return type; }

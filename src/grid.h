@@ -60,13 +60,9 @@ public:
 		nCount(0), cCount(0), eCount(0) {};
 	~Grid();
 
-	void initFromFiles(char* fName);
 	inline Point& getNode(int i) { return nodes[i]; };
 	inline Cell&  getCell(int i) { return cells[i]; };
 	inline Edge&  getEdge(int i) { return edges[i]; };
-	void replaceEdges(int if1, int if2);
-	virtual void reorderEdges();
-	int findEdge(int n1, int n2);
 
 	Point* nodes;
 	Cell*  cells;

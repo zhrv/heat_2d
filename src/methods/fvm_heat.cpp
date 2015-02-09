@@ -2,6 +2,7 @@
 #include "tinyxml.h"
 #include <string>
 #include "global.h"
+#include "MeshReader.h"
 
 void FVM_Heat::init(char * xmlFileName)
 {
@@ -93,10 +94,11 @@ void FVM_Heat::init(char * xmlFileName)
 	bCount = boundaries.size();
 
 	/* Чтение данных сетки. */
-	// TODO: Реализовать возможность чтения других форматов сетки.
 	node0 = task->FirstChild("mesh");
-	const char* fName = task->FirstChild("mesh")->FirstChild("name")->ToElement()->Attribute("value");
-	grid.initFromFiles((char*)fName);
+	const char* fName = node0->FirstChild("name")->ToElement()->Attribute("value");
+	const char* tName = node0->FirstChild("filesType")->ToElement()->Attribute("value");
+	MeshReader* mr = MeshReader::create(MeshReader::getType((char*)tName), (char*)fName);
+	mr->read(&grid);
 
 	/* Определение ГУ для каждой ячейки. */
 	for (int iEdge = 0; iEdge < grid.eCount; iEdge++) {

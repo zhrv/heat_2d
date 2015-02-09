@@ -5,6 +5,7 @@
 #include "metis.h"
 #include <string.h>
 #include <vector>
+#include "MeshReader.h"
 
 void Decomp::init(char * xmlFileName)
 {
@@ -28,8 +29,12 @@ void Decomp::init(char * xmlFileName)
 
 	grids = new Grid[procCount];
 
-	const char* fName = task->FirstChild("mesh")->FirstChild("name")->ToElement()->Attribute("value");
-	grid.initFromFiles((char*)fName);
+	/* Чтение данных сетки. */
+	node0 = task->FirstChild("mesh");
+	const char* fName = node0->FirstChild("name")->ToElement()->Attribute("value");
+	const char* tName = node0->FirstChild("filesType")->ToElement()->Attribute("value");
+	MeshReader* mr = MeshReader::create(MeshReader::getType((char*)tName), (char*)fName);
+	mr->read(&grid);
 }
 
 
