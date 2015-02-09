@@ -6,6 +6,7 @@
 #include <math.h>
 #include <string.h>
 #include "global.h"
+#include "heat_bnd.h"
 
 class Cell 
 {
@@ -43,6 +44,7 @@ public:
 	int      cCount;    // количество точек на грани
 	Point*   c;         // точки на грани
 	int      type;      // тип грани (внутр., гранич.)
+	HeatBoundary *bnd;
 	friend class Grid;
 public:
 	static const int TYPE_INNER		= 0;  

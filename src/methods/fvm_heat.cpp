@@ -67,7 +67,7 @@ void FVM_Heat::init(char * xmlFileName)
 
 	regCount = regions.size();
 
-	// чтение параметров о ГРАНИЧНЫХ УСЛОВИЯХ
+	/* Чтение параметров ГУ */
 	node0 = task->FirstChild("boundaries");
 	TiXmlNode* bNode = node0->FirstChild("boundCond");
 	while (bNode != NULL)
@@ -92,10 +92,37 @@ void FVM_Heat::init(char * xmlFileName)
 	
 	bCount = boundaries.size();
 
+	/* Чтение данных сетки. */
+	// TODO: Реализовать возможность чтения других форматов сетки.
 	node0 = task->FirstChild("mesh");
 	const char* fName = task->FirstChild("mesh")->FirstChild("name")->ToElement()->Attribute("value");
 	grid.initFromFiles((char*)fName);
 
+	/* Определение ГУ для каждой ячейки. */
+	for (int iEdge = 0; iEdge < grid.eCount; iEdge++) {
+		Edge & e = grid.edges[iEdge];
+		if (e.type == Edge::TYPE_INNER) {
+			e.bnd = NULL;
+			continue;
+		}
+		int iBound = -1;
+		for (int i = 0; i < bCount; i++)
+		{
+			if (e.type == boundaries[i]->edgeType)
+			{
+				iBound = i;
+				break;
+			}
+		}
+		if (iBound < 0)
+		{
+			log("ERROR (boundary condition): unknown edge type of edge %d...\n", iEdge);
+			EXIT(1);
+		}
+
+		e.bnd = boundaries[iBound];
+
+	}
 
 	T		= new double[grid.cCount];
 	T_old	= new double[grid.cCount];
@@ -245,7 +272,7 @@ void FVM_Heat::save(int step)
 	sprintf(fName, "res_%010d.vtk", step);
 	FILE * fp = fopen(fName, "w");
 	fprintf(fp, "# vtk DataFile Version 2.0\n");
-	fprintf(fp, "GASDIN data file\n");
+	fprintf(fp, "HEAT_2D data file\n");
 	fprintf(fp, "ASCII\n");
 	fprintf(fp, "DATASET UNSTRUCTURED_GRID\n");
 	fprintf(fp, "POINTS %d float\n", grid.nCount);
@@ -285,23 +312,9 @@ void FVM_Heat::save(int step)
 
 void FVM_Heat::boundaryCond(int iEdge, Param& pL, Param& pR)
 {
-	int iBound = -1;
-	for (int i = 0; i < bCount; i++)
-	{
-		if (grid.edges[iEdge].type == boundaries[i]->edgeType)
-		{
-			iBound = i;
-			break;
-		}
+	if (grid.edges[iEdge].bnd) {
+		grid.edges[iEdge].bnd->run(pL, pR);
 	}
-	if (iBound < 0)
-	{
-		log("ERROR (boundary condition): unknown edge type of edge %d...\n", iEdge);
-		EXIT(1);
-	}
-
-	boundaries[iBound]->run(pL, pR);
-
 }
 
 
