@@ -143,6 +143,7 @@ struct Region
 	int		matId;
 	int		cellType;		//!< тип €чейки
 	Param	par;			//!< параметры региона
+	const char*	name;		//!< им€ региона
 };
 
 struct Material
@@ -150,10 +151,10 @@ struct Material
 	const char*	name;
 	int			id;
 	
-	double		M;		//!< мол€рна€ масса
-	double		Cp;		//!< теплоемкость при посто€нном давлении
-	double		ML;		//!< динамическа€ в€зкость
-	double		K;		//!< коэффициент теплопроводности
+	double		M;			//!< мол€рна€ масса
+	double		Cp;			//!< теплоемкость при посто€нном давлении
+	double		ML;			//!< динамическа€ в€зкость
+	double		Kx, Ky;		//!< коэффициент теплопроводности
 
 	void URS(Param &par, int flag);
 };
@@ -180,6 +181,10 @@ public:
 	static const int TYPE_BOUND_UNKNOWN = 102;
 
 	static const int TYPE_MESH_WRONG_NAME = 201;
+	static const int TYPE_MESH_UNV_UNKNOWN_ELEMENT = 221;
+	static const int TYPE_MESH_UNV_NOT_DEFINED_BNT_EDGE = 222;
+
+	static const int FILE_OPENING_ERROR = 301;
 
 	Exception(char* msg, int t) : message(msg), type(t) {}
 	char* getMessage() { return message; }

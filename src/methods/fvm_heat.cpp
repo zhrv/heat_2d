@@ -40,7 +40,8 @@ void FVM_Heat::init(char * xmlFileName)
 		el = node1->ToElement();
 		mat.name = el->GetText();
 		node1 = matNode->FirstChild("parameters");
-		node1->FirstChild( "K"  )->ToElement()->Attribute( "value", &mat.K  );
+		node1->FirstChild("Kx")->ToElement()->Attribute("value", &mat.Kx);
+		node1->FirstChild("Ky")->ToElement()->Attribute("value", &mat.Ky);
 		materials.push_back(mat);
 
 		matNode = matNode->NextSibling("material");
@@ -57,6 +58,8 @@ void FVM_Heat::init(char * xmlFileName)
 		regNode->FirstChild("material")->ToElement()->Attribute("id", &reg.matId);
 		regNode->FirstChild("cell")->ToElement()->Attribute("type", &reg.cellType);
 		
+		reg.name = regNode->FirstChild("name")->ToElement()->GetText();
+
 		node1 = regNode->FirstChild("parameters");
 		node1->FirstChild( "T"  )->ToElement()->Attribute( "value", &reg.par.T );
 		node1->FirstChild( "P"  )->ToElement()->Attribute( "value", &reg.par.p );
@@ -107,34 +110,65 @@ void FVM_Heat::init(char * xmlFileName)
 			e.bnd = NULL;
 			continue;
 		}
-		int iBound = -1;
-		for (int i = 0; i < bCount; i++)
-		{
-			if (e.type == boundaries[i]->edgeType)
+		if (e.type == Edge::TYPE_NAMED) {
+			int iBound = -1;
+			for (int i = 0; i < bCount; i++)
 			{
-				iBound = i;
-				break;
+				if (strcmp(e.typeName, boundaries[i]->name) == 0)
+				{
+					iBound = i;
+					break;
+				}
 			}
-		}
-		if (iBound < 0)
-		{
-			log("ERROR (boundary condition): unknown edge type of edge %d...\n", iEdge);
-			EXIT(1);
-		}
+			if (iBound < 0)
+			{
+				log("ERROR (boundary condition): unknown edge type of edge %d...\n", iEdge);
+				EXIT(1);
+			}
 
-		e.bnd = boundaries[iBound];
+			e.bnd = boundaries[iBound];
+		}
+		else {
+			int iBound = -1;
+			for (int i = 0; i < bCount; i++)
+			{
+				if (e.type == boundaries[i]->edgeType)
+				{
+					iBound = i;
+					break;
+				}
+			}
+			if (iBound < 0)
+			{
+				log("ERROR (boundary condition): unknown edge type of edge %d...\n", iEdge);
+				EXIT(1);
+			}
 
+			e.bnd = boundaries[iBound];
+		}
 	}
 
+	K		= new Vector[grid.cCount];
 	T		= new double[grid.cCount];
 	T_old	= new double[grid.cCount];
-	T_int = new double[grid.cCount];
-	gradT = new Vector[grid.cCount];
+	T_int	= new double[grid.cCount];
+	gradT	= new Vector[grid.cCount];
 
 	for (int i = 0; i < grid.cCount; i++)
 	{
-		Region & reg = getRegion(i);
-		T[i] = reg.par.T;
+		if (grid.cells[i].type == -1) {
+			Region & reg = getRegion(grid.cells[i].typeName);
+			T[i] = reg.par.T;
+			K[i].x = materials[reg.matId].Kx;
+			K[i].y = materials[reg.matId].Ky;
+		}
+		else {
+			Region & reg = getRegion(i);
+			T[i] = reg.par.T;
+			K[i].x = materials[reg.matId].Kx;
+			K[i].y = materials[reg.matId].Ky;
+		}
+		
 	}
 
 	memcpy(T_old, T, grid.cCount*sizeof(double));
@@ -157,6 +191,7 @@ void FVM_Heat::calcTimeStep()
 
 void FVM_Heat::done()
 {
+	delete[] K;
 	delete[] T;
 	delete[] T_old;
 	delete[] T_int;
@@ -261,12 +296,12 @@ void FVM_Heat::calcGrad()
 			boundaryCond(iEdge, pL, pR);
 			q = 0.5*(pL.T + pR.T);
 		}
-		gradT[c1].x += q*l*n.x;
-		gradT[c1].y += q*l*n.y;
+		gradT[c1].x += q*l*n.x*K[c1].x;
+		gradT[c1].y += q*l*n.y*K[c1].y;
 		if (c2 > -1)
 		{
-			gradT[c2].x -= q*l*n.x;
-			gradT[c2].y -= q*l*n.y;
+			gradT[c2].x -= q*l*n.x*K[c2].x;
+			gradT[c2].y -= q*l*n.y*K[c2].y;
 		}
 	}
 
@@ -315,9 +350,15 @@ void FVM_Heat::save(int step)
 	fprintf(fp, "CELL_DATA %d\nSCALARS Temperature float 1\nLOOKUP_TABLE default\n", grid.cCount);
 	for (int i = 0; i < grid.cCount; i++)
 	{
-		Param p;
-		convertConsToPar(i, p);
-		fprintf(fp, "%25.16f ", p.T);
+		fprintf(fp, "%25.16f ", T[i]);
+		if (i + 1 % 8 == 0 || i + 1 == grid.cCount) fprintf(fp, "\n");
+	}
+
+
+	fprintf(fp, "SCALARS Heat_K float 2\nLOOKUP_TABLE default\n", grid.cCount);
+	for (int i = 0; i < grid.cCount; i++)
+	{
+		fprintf(fp, "%25.16f %25.16f ", K[i].x, K[i].y);
 		if (i + 1 % 8 == 0 || i + 1 == grid.cCount) fprintf(fp, "\n");
 	}
 
@@ -342,13 +383,28 @@ Region & FVM_Heat::getRegionByCellType(int type)
 	EXIT(1);
 }
 
-
-Region   &	FVM_Heat::getRegion	(int iCell)
+Region & FVM_Heat::getRegionByName(char* name)
 {
-	return getRegionByCellType( grid.cells[iCell].type );
+	for (int i = 0; i < regCount; i++)
+	{
+		if (strcmp(regions[i].name, name) == 0) return regions[i];
+	}
+	log("ERROR: unknown cell name '%d'...\n", name);
+	EXIT(1);
 }
 
-Material &	FVM_Heat::getMaterial	(int iCell)
+
+Region   &	FVM_Heat::getRegion(int iCell)
+{
+	return getRegionByCellType(grid.cells[iCell].type);
+}
+
+Region   &	FVM_Heat::getRegion(char * name)
+{
+	return getRegionByName(name);
+}
+
+Material &	FVM_Heat::getMaterial(int iCell)
 {
 	Region & reg = getRegion(iCell);
 	return materials[reg.matId];

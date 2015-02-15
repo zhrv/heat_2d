@@ -49,7 +49,7 @@
     <ClCompile>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>src\mesh;src\tinyxml;src;src\methods;contrib\METIS\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -87,7 +87,7 @@
     <ClCompile Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\main.cpp" />
     <ClCompile Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\mesh\MeshReader.cpp" />
     <ClCompile Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\mesh\MeshReaderBerkleyTriangle.cpp" />
-    <ClCompile Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\mesh\MeshReaderSalome.cpp" />
+    <ClCompile Include="src\mesh\MeshReaderSalomeUnv.cpp" />
     <ClCompile Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\methods\decomp.cpp" />
     <ClCompile Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\methods\fvm_heat.cpp" />
     <ClCompile Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\methods\heat_bnd.cpp" />
@@ -103,7 +103,7 @@
     <ClInclude Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\grid.h" />
     <ClInclude Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\mesh\MeshReader.h" />
     <ClInclude Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\mesh\MeshReaderBerkleyTriangle.h" />
-    <ClInclude Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\mesh\MeshReaderSalome.h" />
+    <ClInclude Include="src\mesh\MeshReaderSalomeUnv.h" />
     <ClInclude Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\methods\decomp.h" />
     <ClInclude Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\methods\fvm_heat.h" />
     <ClInclude Include="..\..\..\..\..\Cloud%40Mail.Ru\dev\sci\2D\heat-2d\src\methods\heat_bnd.h" />

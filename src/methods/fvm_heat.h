@@ -18,9 +18,11 @@ public:
 	virtual void done();
 protected:
 	Region & getRegionByCellType(int type);
+	Region & getRegionByName(char* name);
 
-	Region   &	getRegion	(int iCell);
-	Material &	getMaterial	(int iCell);
+	Region   &	getRegion(int iCell);
+	Region   &	getRegion(char* name);
+	Material &	getMaterial(int iCell);
 	
 	/**
 	 *	Преобразование примитивных переменных в консервативные
@@ -78,7 +80,8 @@ private:
 	Regions			regions;
 	HeatBoundaries		boundaries;
 
-	double * T;			 
+	Vector * K;
+	double * T;
 	double * T_old;
 	double * T_int;
 	Vector * gradT;

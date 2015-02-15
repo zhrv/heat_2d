@@ -1,17 +1,5 @@
 #include "MeshReaderBerkleyTriangle.h"
 
-int findEdge(Grid * g, int n1, int n2)
-{
-	for (int iEdge = 0; iEdge < g->eCount; iEdge++)
-	{
-		if ((g->edges[iEdge].n1 == n1 && g->edges[iEdge].n2 == n2) || (g->edges[iEdge].n1 == n2 && g->edges[iEdge].n2 == n1))
-		{
-			return iEdge;
-		}
-	}
-	return -1;
-}
-
 void MeshReaderBerkleyTriangle::read(Grid* g)
 {
 	char str[50];
@@ -156,7 +144,7 @@ void MeshReaderBerkleyTriangle::read(Grid* g)
 		fscanf(fp, "%d %d %d %d", &n, &n1, &n2, &type);
 		n1--;
 		n2--;
-		int iEdge = findEdge(g, n1, n2);
+		int iEdge = g->findEdge(n1, n2);
 		if (iEdge >= 0) g->edges[iEdge].type = type;
 	}
 	fclose(fp);

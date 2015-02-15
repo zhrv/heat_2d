@@ -15,6 +15,7 @@ struct HeatBoundary
 	
 	
 	int			edgeType;
+	char		name[64];
 	double *	par;
 	int			parCount;
 

@@ -12,7 +12,7 @@ HeatBoundary* HeatBoundary::create(TiXmlNode* bNode)
 	TiXmlNode* node1 = 0;
 
 	const char * type = bNode->FirstChild("type")->ToElement()->GetText();
-	
+
 	if (strcmp(type, HeatBoundary::TYPE_CONST) == 0) {
 		b = new HeatBndConst();
 		bNode->ToElement()->Attribute("edgeType", &b->edgeType);
@@ -47,6 +47,9 @@ HeatBoundary* HeatBoundary::create(TiXmlNode* bNode)
 		node1->ToElement()->Attribute("value", &b->par[1]);
 
 	}
+
+	const char * name = bNode->FirstChild("name")->ToElement()->GetText();
+	strcpy(b->name, name);
 
 	if (!b) {
 		throw Exception("Unknown bountary type '%s' specified.", Exception::TYPE_BOUND_UNKNOWN);

@@ -20,6 +20,7 @@ public:
 	int*  edgesInd;
 	int	  neigh[3];
 	int	  type;
+	char  typeName[64];
 	double  S;
 	Point c; // центр €чейки
 	double HX;
@@ -30,7 +31,7 @@ public:
 class Edge 
 {
 public:
-	Edge(): c(NULL), cCount(0) {};
+	Edge(): c(NULL), cCount(0) { strcpy(typeName,""); };
 	~Edge();
 
 	int      n1;        // узел в начале
@@ -45,12 +46,16 @@ public:
 	Point*   c;         // точки на грани
 	int      type;      // тип грани (внутр., гранич.)
 	HeatBoundary *bnd;
+	char	typeName[64];
 	friend class Grid;
 public:
-	static const int TYPE_INNER		= 0;  
-	static const int TYPE_INLET		= 1;  
-	static const int TYPE_OUTLET	= 2;  
-	static const int TYPE_WALL		= 3;  
+	static const int TYPE_INNER		= 0x00;  
+	static const int TYPE_INLET		= 0x01;  
+	static const int TYPE_OUTLET	= 0x02;
+	static const int TYPE_WALL		= 0x03;
+
+	static const int TYPE_NAMED		= 0x100;
+
 };
 
 class Grid 
@@ -63,6 +68,7 @@ public:
 	inline Point& getNode(int i) { return nodes[i]; };
 	inline Cell&  getCell(int i) { return cells[i]; };
 	inline Edge&  getEdge(int i) { return edges[i]; };
+	int findEdge(int n1, int n2);
 
 	Point* nodes;
 	Cell*  cells;
