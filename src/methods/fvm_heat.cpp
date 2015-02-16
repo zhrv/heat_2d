@@ -61,9 +61,12 @@ void FVM_Heat::init(char * xmlFileName)
 		reg.name = regNode->FirstChild("name")->ToElement()->GetText();
 
 		node1 = regNode->FirstChild("parameters");
-		node1->FirstChild( "T"  )->ToElement()->Attribute( "value", &reg.par.T );
-		node1->FirstChild( "P"  )->ToElement()->Attribute( "value", &reg.par.p );
-		
+		node1->FirstChild("T")->ToElement()->Attribute("value", &reg.par.T);
+		node1->FirstChild("P")->ToElement()->Attribute("value", &reg.par.p);
+
+		node1->FirstChild("Vx")->ToElement()->Attribute("value", &reg.par.u);
+		node1->FirstChild("Vy")->ToElement()->Attribute("value", &reg.par.v);
+
 		regions.push_back(reg);
 
 		regNode = regNode->NextSibling("region");
@@ -153,18 +156,23 @@ void FVM_Heat::init(char * xmlFileName)
 	T_old	= new double[grid.cCount];
 	T_int	= new double[grid.cCount];
 	gradT	= new Vector[grid.cCount];
+	V		= new Vector[grid.cCount];
 
 	for (int i = 0; i < grid.cCount; i++)
 	{
 		if (grid.cells[i].type == -1) {
 			Region & reg = getRegion(grid.cells[i].typeName);
 			T[i] = reg.par.T;
+			V[i].x = reg.par.u;
+			V[i].y = reg.par.v;
 			K[i].x = materials[reg.matId].Kx;
 			K[i].y = materials[reg.matId].Ky;
 		}
 		else {
 			Region & reg = getRegion(i);
 			T[i] = reg.par.T;
+			V[i].x = reg.par.u;
+			V[i].y = reg.par.v;
 			K[i].x = materials[reg.matId].Kx;
 			K[i].y = materials[reg.matId].Ky;
 		}
@@ -196,6 +204,7 @@ void FVM_Heat::done()
 	delete[] T_old;
 	delete[] T_int;
 	delete[] gradT;
+	delete[] V;
 }
 
 
@@ -232,14 +241,24 @@ void FVM_Heat::run()
 				convertConsToPar(c2, pR);
 				q = scalar_prod(gradT[c1], n) + scalar_prod(gradT[c2], n);
 				q *= 0.5;
+				
+				Vector Vi;
+				Vi.x = 0.5*(pL.u*pL.T + pR.u*pR.T);
+				Vi.y = 0.5*(pL.v*pL.T + pR.v*pR.T);
+				q -= scalar_prod(Vi, n);
 			}
 			else {
 				int c1 = grid.edges[iEdge].c1;
 				convertConsToPar(c1, pL);
-				//boundaryCond(iEdge, pL, pR);
+				boundaryCond(iEdge, pL, pR);
 				//h = edge.cnl1 + edge.cnl1;
 				//q = (pR.T - pL.T) / h;
 				q = scalar_prod(gradT[c1], n);
+				
+				Vector Vi;
+				Vi.x = 0.5*(pL.u*pL.T + pR.u*pR.T);
+				Vi.y = 0.5*(pL.v*pL.T + pR.v*pR.T);
+				q -= scalar_prod(Vi, n);
 			}
 			T_int[c1] += q*l;
 			if (c2 > -1) 
@@ -414,11 +433,15 @@ Material &	FVM_Heat::getMaterial(int iCell)
 void FVM_Heat::convertParToCons(int iCell, Param & par)
 {
 	T[iCell] = par.T;
+	V[iCell].x = par.u;
+	V[iCell].y = par.v;
 }
 
 void FVM_Heat::convertConsToPar(int iCell, Param & par)
 {
 	par.T = T[iCell];
+	par.u = V[iCell].x;
+	par.v = V[iCell].y;
 }
 
 

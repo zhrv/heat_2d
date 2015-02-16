@@ -62,15 +62,21 @@ HeatBoundary* HeatBoundary::create(TiXmlNode* bNode)
 void HeatBndConst::run(Param& pL, Param& pR)
 {
 	pR.T = par[0];
+	pR.u = pL.u;
+	pR.v = pL.v;
 }
 
 void HeatBndFlow::run(Param& pL, Param& pR) // @todo исправить - необходимо учитывать шаг сетки
 {
 	pR.T = pL.T+par[1]/par[0];
+	pR.u = pL.u;
+	pR.v = pL.v;
 }
 
 void HeatBndNoFlow::run(Param& pL, Param& pR)
 {
 	pR.T = pL.T;
+	pR.u = pL.u;
+	pR.v = pL.v;
 }
 

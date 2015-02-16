@@ -85,6 +85,7 @@ private:
 	double * T_old;
 	double * T_int;
 	Vector * gradT;
+	Vector * V;
 
 };
 

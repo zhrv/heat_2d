@@ -177,6 +177,15 @@ void MeshReaderSalomeUnv::read(Grid * g)
 				cfi[i]++;
 				g->edges[iEdge].cnl1 = fabs(g->edges[iEdge].n.x*(g->edges[iEdge].c[0].x - g->cells[g->edges[iEdge].c1].c.x) + g->edges[iEdge].n.y*(g->edges[iEdge].c[0].y - g->cells[g->edges[iEdge].c1].c.y));
 
+				// коррекция направлений нормалей
+				Vector vc;
+				vc.x = g->cells[i].c.x - g->edges[iEdge].c[0].x;
+				vc.y = g->cells[i].c.y - g->edges[iEdge].c[0].y;
+				if (scalar_prod(vc, g->edges[iEdge].n) > 0) {
+					g->edges[iEdge].n.x *= -1;
+					g->edges[iEdge].n.y *= -1;
+				}
+
 				if (p > -1)
 				{
 
@@ -238,50 +247,22 @@ void MeshReaderSalomeUnv::read(Grid * g)
 		}
 	}
 
-	for (int i = 0; i < g->cCount; i++)
-	{
+	for (int i = 0; i < g->cCount; i++)	{
 		double a = g->edges[g->cells[i].edgesInd[0]].l;
 		double b = g->edges[g->cells[i].edgesInd[1]].l;
 		double c = g->edges[g->cells[i].edgesInd[2]].l;
 		double p = (a + b + c) / 2.0;
 		g->cells[i].S = sqrt(p*(p - a)*(p - b)*(p - c));
-	}
 
-	for (int i = 0; i < g->cCount; i++)
-	{
 		delete[] neigh[i];
 	}
+
 	delete[] neigh;
 	delete[] cfi;
 	log("  complete...\n");
 
 }
 
-
-//bool MeshReaderSalomeUnv::edge_exist(int i1, int i2)
-//{
-//	for (vector<indexes>::iterator it = edges.begin(); it != edges.end(); it++) {
-//		indexes & ind = *it;
-//		if (((ind[3] == i1) && (ind[4] == i2)) || ((ind[3] == i2) && (ind[4] == i1))) {
-//			return true;
-//		}
-//	}
-//	return false;
-//}
-//
-
-//void MeshReaderSalomeUnv::edge_add(int i1, int i2)
-//{
-//	if (!edge_exist(i1, i2)) {
-//		indexes ind;
-//		ind.push_back(-1);
-//		ind.push_back(11);
-//		ind.push_back(2);
-//		ind.push_back(i1);
-//		ind.push_back(i2);
-//		edges.push_back(ind);
-//	}
-//}
 
 void MeshReaderSalomeUnv::read_block(string_list * sl, ifstream& fin)
 {
