@@ -39,20 +39,9 @@ void MeshReaderSalomeUnv::read(Grid * g)
 		throw Exception("File '%s' opening error.", Exception::FILE_OPENING_ERROR);
 	}
 
-	// упаковка данных в класс Grid
-
-	////перенумеровка граничных индексов
-	//for (bnd_map::iterator it = bounds.begin(); it != bounds.end(); it++) {
-	//	for (indexes::iterator ind = it->second.begin(); ind != it->second.end(); ind++) {
-	//		int i = find_index(*ind);
-	//		if (i != -1) {
-	//			*ind = i;
-	//		}
-	//		else {
-	//			throw Exception("Boundary edges indexing error!!!", -1);
-	//		}
-	//	}
-	//}
+	/* 
+	 *  Упаковка данных в класс Grid
+	 */
 
 	int i;
 
@@ -73,7 +62,6 @@ void MeshReaderSalomeUnv::read(Grid * g)
 	g->cCount = cells.size();
 	g->cells = new Cell[g->cCount];
 	map<int, ind_set> node_cells;
-	//map<int, indexes> cell_nodes;
 	i = 0;
 	for (index_list::iterator it = cells.begin(); it != cells.end(); it++, i++) {
 		indexes & ind = *it;
